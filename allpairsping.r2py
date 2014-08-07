@@ -13,7 +13,9 @@ def probe_neighbors(port):
   # Call me again in 10 seconds
   while True:
     try:
-      settimer(10,probe_neighbors,(port,))
+      #settimer(10,probe_neighbors,(port,))    RepyV1 call, not Valid in RepyV2. Will use sleep and createthread() to achieve this functionality
+      sleep(10)
+      createthread(probe_neighbors(port,))
       return
     except Exception, e:
       if "Resource 'events'" in str(e):
@@ -25,7 +27,7 @@ def probe_neighbors(port):
 
 
 # Handle an incoming message
-def got_message(srcip,srcport,mess,ch):
+def got_message(srcip,srcport,mess):
   if mess == 'ping':
     sendmessage(srcip,srcport,'pong')
   elif mess == 'pong':
@@ -71,7 +73,7 @@ def generate_status_page():
 
 
 # Displays a web page with the latency information
-def handle_http_request(srcip,srcport,connobj, ch, mainch):
+def handle_http_request(srcip,srcport,connobj):
   # Get the header
   try:
     total_data = ''
@@ -94,7 +96,7 @@ def handle_http_request(srcip,srcport,connobj, ch, mainch):
     # Potential Bug?: We ignore the overflow data
     header, overflow = total_data.split('\n\n', 1)
 
-  except Exception, e:
+  except SocketClosedRemote, e:
     if "Socket closed" in str(e):
       # We can't do anything if the socket is closed
       return
@@ -125,7 +127,7 @@ def handle_http_request(srcip,srcport,connobj, ch, mainch):
       sent += connobj.send(data[sent:])
     # and we're done, so let's close this connection...
     connobj.close()
-  except Exception, e:
+  except SocketClosedRemote, e:
     if "Socket closed" in str(e):
       # We can't do anything if the socket is closed
       return
@@ -155,11 +157,26 @@ if callfunc == 'initialize':
   pingport = int(callargs[0])
 
   # call gotmessage whenever receiving a message
-  recvmess(ip,pingport,got_message)  
+  # recvmess(ip,pingport,got_message)                     repyV1 call, not valid in RepyV2
+  udpserversocket = listenformessage(ip, pingport)                          #waits for new UDP message
+  try:
+    srcip, srcport, mess = udpserversocket.getmessage()
+    got_message(srcip, srcport, mess)
+  except SocketWouldBlockError:
+      sleep(0.1)
+
 
   probe_neighbors(pingport)
 
   # we want to register a function to show a status webpage (TCP port)
   pageport = int(callargs[0])
-  waitforconn(ip,pageport,handle_http_request)
+  #waitforconn(ip,pageport,handle_http_request)          repyV1 call, not valid in RepyV2
+  connobj = listenforconnection(ip,pageport)
+  while true:
+    try: 
+      ret_ip, ret_port, ret_socket = connobj.getconnection()
+      handle_http_request(ret_ip, ret_port, ret_socket)
+    except SocketWouldBlockError:
+      sleep(0.1)
+
 
