@@ -1,11 +1,13 @@
 # send a probe message to each neighbor
 def probe_neighbors(port):
-
+  log ("inside probe")
+  log (getthreadname)
   for neighborip in mycontext["neighborlist"]:
     mycontext['sendtime'][neighborip] = getruntime()
     sendmessage(neighborip, port, 'ping',getmyip(),port)
-
-    sendmessage(neighborip, port,'share'+encode_row(getmyip(), mycontext["neighborlist"], mycontext['latency'].copy()))
+    log ("first sendmessage is done")
+    sendmessage(neighborip, port,'share'+encode_row(getmyip(), mycontext["neighborlist"], mycontext['latency'].copy()), getmyip(), port)
+    log ("second sendmessage is done")
     # sleep in between messages to prevent us from getting a huge number of 
     # responses all at once...
     sleep(.5)
@@ -13,23 +15,26 @@ def probe_neighbors(port):
   # Call me again in 10 seconds
   while True:
     try:
+      log ("entering while loop")
       #settimer(10,probe_neighbors,(port,))    RepyV1 call, not Valid in RepyV2. Will use sleep and createthread() to achieve this functionality
       sleep(10)
-      createthread(probe_neighbors(port,))
+      createthread(probe_neighbors(port))
+      log ("also working in while loop")
       return
     except Exception, e:
-      if "Resource 'events'" in str(e):
-        # there are too many events scheduled, I should wait and try again
-        sleep(.5)
-        continue
-      raise
+      # there are too many events scheduled, I should wait and try again
+      log ("*********oops**************")
+      sleep(.5)
+      continue
+      
   
 
 
 # Handle an incoming message
 def got_message(srcip,srcport,mess):
   if mess == 'ping':
-    sendmessage(srcip,srcport,'pong')
+    log ("\n is it coming here in got message")
+    sendmessage(srcip,srcport,'pong',getmyip(), pingport)
   elif mess == 'pong':
     # elapsed time is now - time when I sent the ping
     mycontext['latency'][srcip] = getruntime() - mycontext['sendtime'][srcip]
@@ -136,7 +141,7 @@ def handle_http_request(srcip,srcport,connobj):
 
 
 if callfunc == 'initialize':
-
+  
   # this holds the response information (i.e. when nodes responded)
   mycontext['latency'] = {}
 
@@ -145,36 +150,60 @@ if callfunc == 'initialize':
 
   # this remembers row data from the other nodes
   mycontext['row'] = {}
-  
+  log ("hi working")
   # get the nodes to probe
   mycontext['neighborlist'] = []
-  for line in file("neighboriplist.txt"):
-    mycontext['neighborlist'].append(line.strip())
+  try:
+    fileobject = openfile('neighboriplist.txt',True)
+    filecontent = fileobject.readat(None,0)
+    neighbor_array = filecontent.splitlines()
+    for line in neighbor_array:
+      mycontext['neighborlist'].append(line.strip())
+    log ("file is opened correctly")
+  except RepyArgumentError, e1:
+    log ("exception in reading from file"+ str(e1))
+  except FileInUseError, e2:
+    log ("exception in reading from file"+ str(e2))
+  except ResourceExhaustedError, e3:
+    log ("exception in reading from file"+ str(e3))
+  except FileNotFoundError, e4:
+    log ("exception in reading from file"+ str(e4))
 
   ip = getmyip() 
+  log (ip)
   if len(callargs) != 1:
     raise Exception, "Must specify the port to use"
   pingport = int(callargs[0])
+  log (pingport)
 
   # call gotmessage whenever receiving a message
   # recvmess(ip,pingport,got_message)                     repyV1 call, not valid in RepyV2
+ 
+  log ("working till message listening")
   udpserversocket = listenformessage(ip, pingport)                          #waits for new UDP message
+  log ("listening still")
   try:
-    srcip, srcport, mess = udpserversocket.getmessage()
-    got_message(srcip, srcport, mess)
+      srcip, srcport, mess = udpserversocket.getmessage()
+      log ("got message")
+      got_message(srcip, srcport, mess)
+      log ("done")
   except SocketWouldBlockError:
       sleep(0.1)
+    
 
-
+  log ("calling pingport")
   probe_neighbors(pingport)
 
   # we want to register a function to show a status webpage (TCP port)
   pageport = int(callargs[0])
+  log ("working after pageport")
   #waitforconn(ip,pageport,handle_http_request)          repyV1 call, not valid in RepyV2
   connobj = listenforconnection(ip,pageport)
-  while true:
+  log ("listened a new connection")
+  while True:
     try: 
       ret_ip, ret_port, ret_socket = connobj.getconnection()
+      log ("got connection")
       handle_http_request(ret_ip, ret_port, ret_socket)
     except SocketWouldBlockError:
       sleep(0.1)
