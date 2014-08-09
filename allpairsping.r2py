@@ -1,13 +1,9 @@
 # send a probe message to each neighbor
-def probe_neighbors(port):
-  log ("inside probe")
-  log (getthreadname)
+def probe_neighbors():
   for neighborip in mycontext["neighborlist"]:
     mycontext['sendtime'][neighborip] = getruntime()
-    sendmessage(neighborip, port, 'ping',getmyip(),port)
-    log ("first sendmessage is done")
-    sendmessage(neighborip, port,'share'+encode_row(getmyip(), mycontext["neighborlist"], mycontext['latency'].copy()), getmyip(), port)
-    log ("second sendmessage is done")
+    sendmessage(neighborip, mycontext['port'], 'ping',getmyip(),mycontext['port'])
+    sendmessage(neighborip, mycontext['port'],'share'+encode_row(getmyip(), mycontext["neighborlist"], mycontext['latency'].copy()), getmyip(), mycontext['port'])
     # sleep in between messages to prevent us from getting a huge number of 
     # responses all at once...
     sleep(.5)
@@ -15,17 +11,16 @@ def probe_neighbors(port):
   # Call me again in 10 seconds
   while True:
     try:
-      log ("entering while loop")
       #settimer(10,probe_neighbors,(port,))    RepyV1 call, not Valid in RepyV2. Will use sleep and createthread() to achieve this functionality
       sleep(10)
-      createthread(probe_neighbors(port))
-      log ("also working in while loop")
+      createthread(probe_neighbors)
       return
     except Exception, e:
-      # there are too many events scheduled, I should wait and try again
-      log ("*********oops**************")
-      sleep(.5)
-      continue
+      if "Resource 'events'" in str(e):
+        # there are too many events scheduled, I should wait and try again
+        sleep(.5)
+        continue
+      raise
       
   
 
@@ -33,7 +28,6 @@ def probe_neighbors(port):
 # Handle an incoming message
 def got_message(srcip,srcport,mess):
   if mess == 'ping':
-    log ("\n is it coming here in got message")
     sendmessage(srcip,srcport,'pong',getmyip(), pingport)
   elif mess == 'pong':
     # elapsed time is now - time when I sent the ping
@@ -45,7 +39,6 @@ def got_message(srcip,srcport,mess):
 
 
 def encode_row(rowip, neighborlist, latencylist):
-
   retstring = "<tr><td>"+rowip+"</td>"
   for neighborip in neighborlist:
     if neighborip in latencylist:
@@ -150,7 +143,6 @@ if callfunc == 'initialize':
 
   # this remembers row data from the other nodes
   mycontext['row'] = {}
-  log ("hi working")
   # get the nodes to probe
   mycontext['neighborlist'] = []
   try:
@@ -170,40 +162,28 @@ if callfunc == 'initialize':
     log ("exception in reading from file"+ str(e4))
 
   ip = getmyip() 
-  log (ip)
   if len(callargs) != 1:
     raise Exception, "Must specify the port to use"
   pingport = int(callargs[0])
-  log (pingport)
-
-  # call gotmessage whenever receiving a message
+  mycontext['port'] = pingport
   # recvmess(ip,pingport,got_message)                     repyV1 call, not valid in RepyV2
  
-  log ("working till message listening")
   udpserversocket = listenformessage(ip, pingport)                          #waits for new UDP message
-  log ("listening still")
   try:
       srcip, srcport, mess = udpserversocket.getmessage()
-      log ("got message")
       got_message(srcip, srcport, mess)
-      log ("done")
   except SocketWouldBlockError:
       sleep(0.1)
     
-
-  log ("calling pingport")
-  probe_neighbors(pingport)
+  probe_neighbors()
 
   # we want to register a function to show a status webpage (TCP port)
   pageport = int(callargs[0])
-  log ("working after pageport")
   #waitforconn(ip,pageport,handle_http_request)          repyV1 call, not valid in RepyV2
   connobj = listenforconnection(ip,pageport)
-  log ("listened a new connection")
   while True:
     try: 
       ret_ip, ret_port, ret_socket = connobj.getconnection()
-      log ("got connection")
       handle_http_request(ret_ip, ret_port, ret_socket)
     except SocketWouldBlockError:
       sleep(0.1)
