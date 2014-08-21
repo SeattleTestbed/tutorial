@@ -182,7 +182,6 @@ if callfunc == 'initialize':
   
   #listen for connection and call handle_http_request once a connection is got
   connobj = listenforconnection(ip,mycontext['port']) 
-  log("changed")
   createthread(handle_connection_forever)
   
 
