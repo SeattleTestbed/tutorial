@@ -18,7 +18,8 @@ def probe_neighbors_forever():
         if neighborip != getmyip():
           sendmessage(neighborip, mycontext['port'], 'ping',getmyip(),mycontext['port'])
           sendmessage(neighborip,mycontext['port'],'share'+encode_row(getmyip(),mycontext["neighborlist"],mycontext['latency'].copy()),getmyip(),mycontext['port'])
-          sleep(10)
+          sleep(0.5)
+      sleep(10)
     except ResourceExhaustedError, e:
       # there are too many events scheduled, I should wait and try again
       sleep(.5)
@@ -181,6 +182,7 @@ if callfunc == 'initialize':
   
   #listen for connection and call handle_http_request once a connection is got
   connobj = listenforconnection(ip,mycontext['port']) 
+  log("changed")
   createthread(handle_connection_forever)
   
 
