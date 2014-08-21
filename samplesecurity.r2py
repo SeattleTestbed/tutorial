@@ -67,7 +67,7 @@ class SecureFile():
 
   def writeat(self,data,offset):
     datalen = len(data)
-    filesize_after_datawriting = datalen + offset 
+    size_after_data = datalen + offset 
     if size_after_data != mycontext['size']:
       raise ValueError
     else:
