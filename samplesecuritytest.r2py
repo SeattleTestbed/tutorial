@@ -1,0 +1,13 @@
+if "look.txt" in listfiles():
+  removefile("look.txt")
+myfile=openfile("look.txt",True)  #Open a file
+
+
+#set maximum file size allowed
+myfile.setmaxfilesize(10)
+
+#the following writeat should give error as data size is greater than allowed max size 
+myfile.writeat("abcdegsrtfcdy",0)
+
+#Close the file
+myfile.close()
