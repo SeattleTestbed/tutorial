@@ -12,21 +12,18 @@
 def probe_neighbors_forever():
   # Call me again in 10 seconds
   while True:
-    try:
-      for neighborip in mycontext["neighborlist"]:
-        mycontext['sendtime'][neighborip] = getruntime()
-        if neighborip == getmyip():
-          #do nothing
-          continue
-        else:
+    for neighborip in mycontext["neighborlist"]:
+      mycontext['sendtime'][neighborip] = getruntime()
+      if neighborip == getmyip():
+        #do nothing
+        continue
+      else:
           sendmessage(neighborip, mycontext['port'], 'ping',getmyip(),mycontext['port'])
           sendmessage(neighborip,mycontext['port'],'share'+encode_row(getmyip(),mycontext["neighborlist"],mycontext['latency'].copy()),getmyip(),mycontext['port'])
           sleep(0.5)
-      sleep(10)
-    except AlreadyListeningError, e:
-      # there are too many events scheduled, I should wait and try again
-      sleep(.5)
-      continue
+    #sleep for 10 sec and start from while loop again
+    sleep(10)
+    
   
 
 
