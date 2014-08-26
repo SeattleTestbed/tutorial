@@ -80,7 +80,9 @@ def handle_http_request(srcip,srcport,connobj):
     # is an empty string.
     while '\n\n' not in new_data:
       # Receive in chunks to avoid reading too much data
+      log("inside while of http_handle_request")
       data = connobj.recv(4096)
+      log(data)
       # This is because Windows uses \r\n, Linux/Macs use \n.
       # By doing this, we avoid having to program special cases for
       # the different endline formats.
@@ -168,6 +170,7 @@ if callfunc == 'initialize':
     raise FileNotFoundError("neighboriplist.txt file doesn't exist. Please provide the required file in same directory.")
 
   ip = getmyip() 
+  log(ip)
   if len(callargs) != 1:
     raise Exception, "Must specify the port to use"
   pingport = int(callargs[0])
