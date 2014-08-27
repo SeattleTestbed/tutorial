@@ -94,12 +94,16 @@ def handle_http_request(srcip,srcport,connobj):
     # Potential Bug?: We ignore the overflow data
     header, overflow = total_data.split('\n\n', 1)
 
-  except SocketClosedRemote, e:
-    if "Socket closed" in str(e):
-      # We can't do anything if the socket is closed
+  #except SocketClosedRemote, e:
+    #if "Socket closed" in str(e):
+      ## We can't do anything if the socket is closed
+      #return
+    #raise
+    
+  except SocketWouldBlockError, e:
+      log(e)
       return
-    raise
-
+      
   # Get the request path, which is inbetween the HTTP action keyword and the
   # HTTP version number.
   # The http action keyword is the first word with no whitespace.
