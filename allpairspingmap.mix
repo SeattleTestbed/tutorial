@@ -86,13 +86,9 @@ def probe_neighbors_forever():
   while True:
     for neighborip in mycontext["neighborlist"]:
       mycontext['sendtime'][neighborip] = getruntime()
-      if neighborip == getmyip():
-        #do nothing
-        continue
       sendmessage(neighborip, mycontext['port'], 'ping',getmyip(),mycontext['port'])
-      
-      sendmessage(neighborip,mycontext['port'],'share'+encode_row(mycontext["neighborlist"],mycontext['latency'].copy()),getmyip(),mycontext['port'])
       log("sent message")
+      sendmessage(neighborip,mycontext['port'],'share'+encode_row(mycontext["neighborlist"],mycontext['latency'].copy()),getmyip(),mycontext['port'])
       sleep(0.5)
     #sleep for 10 sec and start from while loop again
     sleep(10)
@@ -310,40 +306,29 @@ def handle_http_request(srcip,srcport,connobj):
   <Return>
     None
   '''
-  log("inside http_request")
+  def handle_http_request(srcip,srcport,connobj):
   # Get the header
-  try:
-    total_data = ''
-    # We use a separate string to store the received data so that we don't have to
-    # re-check the beginning parts of the string multiple times
-    new_data = ''
-    # The HTTP header ends once we see the char combination '\n\n', which
-    # is an empty string.
-    while '\n\n' not in new_data:
-      # Receive in chunks to avoid reading too much data
-      log("inside while loop")
-      try:
-        data = connobj.recv(4096)
-        # This is because Windows uses \r\n, Linux/Macs use \n.
-        # By doing this, we avoid having to program special cases for
-        # the different endline formats.
-        new_data = data.replace('\r\n', '\n')
-        total_data += new_data
-      except Exception,e:
-        log("inside error\n")
-        continue
-
-    # keep everything after the first '\n\n' intact, just incase there is
-    # more content after the header that we may need
-    # Potential Bug?: We ignore the overflow data
-    header, overflow = total_data.split('\n\n', 1)
-
-  
-    
+  total_data = ''
+  new_data = ''
+  # The HTTP header ends once we see the char combination '\n\n', which
+  # is an empty string.
+  while '\n\n' not in new_data:
+    # Receive in chunks to avoid reading too much data
+    log("inside while of http_handle_request")
+    try:
+      data = connobj.recv(4096)
+      log(data)
+    except SocketWouldBlockError, e:
+      log(e)
+      return
+    new_data = data.replace('\r\n', '\n')
+    total_data += new_data
+  header, overflow = total_data.split('\n\n', 1)
 
   # Get the request path, which is inbetween the HTTP action keyword and the
   # HTTP version number.
   # The http action keyword is the first word with no whitespace.
+  log("splitting1")
   everything_after_httpaction = header.split(None, 1)[1]
   # Following the path is the HTTP/[VERSION_NUMBER].
   # We can use that as a delimiter to extract the path.
@@ -361,6 +346,7 @@ def handle_http_request(srcip,srcport,connobj):
 
     if requested_file not in mycontext['RECOGNIZED_FILES']:
       raise InvalidRequestError("Unrecognized file:" + requested_file)
+    
     # Generate the index page if the request field is empty.
     elif not requested_file:
       
