@@ -85,7 +85,11 @@ def probe_neighbors_forever():
   '''
   while True:
     for neighborip in mycontext["neighborlist"]:
+      
       mycontext['sendtime'][neighborip] = getruntime()
+      if neighborip == getmyip():
+        #do nothing
+        continue
       sendmessage(neighborip, mycontext['port'], 'ping',getmyip(),mycontext['port'])
       log("sent message")
       sendmessage(neighborip,mycontext['port'],'share'+encode_row(mycontext["neighborlist"],mycontext['latency'].copy()),getmyip(),mycontext['port'])
