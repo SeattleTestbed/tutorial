@@ -485,5 +485,5 @@ if callfunc == 'initialize':
   # Getting geoip data takes a while, in the meanwhile we allow the user to
   # see a status webpage and display a notice there.
   log ("*****************check if it ever gets here****************")
-  #lookup_geoip_info()
+  lookup_geoip_info()
 
