@@ -85,11 +85,7 @@ def probe_neighbors_forever():
   '''
   while True:
     for neighborip in mycontext["neighborlist"]:
-      
       mycontext['sendtime'][neighborip] = getruntime()
-      if neighborip == getmyip():
-        #do nothing
-        continue
       sendmessage(neighborip, mycontext['port'], 'ping',getmyip(),mycontext['port'])
       log("sent message")
       sendmessage(neighborip,mycontext['port'],'share'+encode_row(mycontext["neighborlist"],mycontext['latency'].copy()),getmyip(),mycontext['port'])
@@ -288,29 +284,7 @@ def generate_status_page():
   return webpage
 
 
-
-
 def handle_http_request(srcip,srcport,connobj):
-  '''
-  <Purpose>
-    waitforconn() callback.  Responds to a user's http request.
-
-  <Arguments>
-    See the Repy documentation for waitforconn() callbacks.
-
-  <Side Effects>
-    If no file is requested, we send a web page with the latency information.
-    If a recognized file is requested, and the file exists, we send the file's
-    contents to the user.
-    Otherwise, we send a 404 error message.
-
-  <Exceptions>
-    None
-
-  <Return>
-    None
-  '''
-  def handle_http_request(srcip,srcport,connobj):
   # Get the header
   total_data = ''
   new_data = ''
