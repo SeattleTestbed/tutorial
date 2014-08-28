@@ -235,10 +235,9 @@ def generate_status_page():
 
   webpage += '<script type="text/javascript" src="http://www.google.com/jsapi"></script>'
   webpage += '<script type="text/javascript">google.load("maps", "2.x"); google.load("jquery", "1.3.2");</script>'
-  log("\njavascript added")
   # Include our script/stylesheet for the webpage
-  webpage += '<link rel="stylesheet" type="text/css" href="/Users/sandeepverma/Desktop/seattle_project/new_seattle_testbed/test/seash/scripts/target/style.css" />'
-  webpage += '<script type="text/javascript" src="/Users/sandeepverma/Desktop/seattle_project/new_seattle_testbed/test/seash/scripts/target/jquergmaps.js"></script>'
+  webpage += '<link rel="stylesheet" type="text/css" href="style.css" />'
+  webpage += '<script type="text/javascript" src="jquerygmaps.js"></script>'
   
   # Begin displaying body content; Lets start with the map.
   webpage += "<body><div id='message' style='display: none;'></div><div id='map'></div>"
