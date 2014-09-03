@@ -19,6 +19,7 @@
     jquerygmaps.js
     style.css
     map_marker_icon.png
+    map_marker_icon_blue.png
 
   Once this is set up, you need to pass your Clearinghouse port to the program
   as an argument:
@@ -51,7 +52,7 @@ class InvalidRequestError(Exception):
 #   This image is used as a marker for where the vessels are, on the map.
 
 mycontext['RECOGNIZED_FILES'] = (
-  '', 'style.css', 'jquerygmaps.js', 'map_marker_icon.png')
+  '', 'style.css', 'jquerygmaps.js', 'map_marker_icon.png', 'map_marker_icon_blue.png')
 
 
 # When responding to HTTP requests, we need to include a MIME type, identifying
