@@ -17,10 +17,9 @@ def probe_neighbors_forever():
       if neighborip == getmyip():
         #do nothing
         continue
-      else:
-          sendmessage(neighborip, mycontext['port'], 'ping',getmyip(),mycontext['port'])
-          sendmessage(neighborip,mycontext['port'],'share'+encode_row(getmyip(),mycontext["neighborlist"],mycontext['latency'].copy()),getmyip(),mycontext['port'])
-          sleep(0.5)
+      sendmessage(neighborip, mycontext['port'], 'ping',getmyip(),mycontext['port'])
+      sendmessage(neighborip,mycontext['port'],'share'+encode_row(getmyip(),mycontext["neighborlist"],mycontext['latency'].copy()),getmyip(),mycontext['port'])
+      sleep(0.5)
     #sleep for 10 sec and start from while loop again
     sleep(10)
     
@@ -77,7 +76,6 @@ def handle_http_request(srcip,srcport,connobj):
   # is an empty string.
   while '\n\n' not in new_data:
     # Receive in chunks to avoid reading too much data
-    log("inside while of http_handle_request")
     data = connobj.recv(4096)
     new_data = data.replace('\r\n', '\n')
     total_data += new_data
@@ -87,7 +85,6 @@ def handle_http_request(srcip,srcport,connobj):
   # Get the request path, which is inbetween the HTTP action keyword and the
   # HTTP version number.
   # The http action keyword is the first word with no whitespace.
-  log("is it coming here")
   everything_after_httpaction = header.split(None, 1)[1]
   # Following the path is the HTTP/[VERSION_NUMBER].
   # We can use that as a delimiter to extract the path.
@@ -123,7 +120,7 @@ def handle_message_forever():
       got_message(srcip, srcport, mess)
     except SocketWouldBlockError:
       sleep(0.1)
-      continue
+      
 
 def handle_connection_forever():
   while True:
@@ -155,7 +152,6 @@ if callfunc == 'initialize':
     raise FileNotFoundError("neighboriplist.txt file doesn't exist. Please provide the required file in same directory.")
 
   ip = getmyip() 
-  log(ip)
   if len(callargs) != 1:
     raise Exception, "Must specify the port to use"
   pingport = int(callargs[0])
