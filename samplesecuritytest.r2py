@@ -4,7 +4,7 @@ myfile=openfile("look.txt",True)  #Open a file
 
 myfile.writeat("abc",0)
 data = myfile.readat(None,0)
-log("data on file after first write should be test : " + data + "\n")
+log("data on file after first write should be abc : " + data + "\n")
 
 #set maximum file size allowed to 10
 myfile.setmaxfilesize(2)
