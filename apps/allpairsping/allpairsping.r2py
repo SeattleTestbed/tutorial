@@ -144,6 +144,13 @@ def handle_connection_forever():
 
 
 if callfunc == 'initialize':
+  #check if user has provided port number as call argument
+  if len(callargs) != 1:
+    raise Exception("Must specify the port to use")
+
+  pingport = int(callargs[0])
+  mycontext['port'] = pingport
+
   # this holds the response information (i.e. when nodes responded)
   mycontext['latency'] = {}
   mycontext['myip'] = getmyip()
@@ -160,6 +167,7 @@ if callfunc == 'initialize':
   try:
     fileobject = openfile('neighboriplist.txt',False)
   except FileNotFoundError, e:
+    #raise error if file doesn't exists
     raise FileNotFoundError("neighboriplist.txt file doesn't exist. Please provide the required file in same directory.")
 
   filecontent = fileobject.readat(None,0)
@@ -170,10 +178,7 @@ if callfunc == 'initialize':
       continue
     mycontext['neighborlist'].append(line.strip())
   
-  if len(callargs) != 1:
-    raise Exception, "Must specify the port to use"
-  pingport = int(callargs[0])
-  mycontext['port'] = pingport
+
 
   #listen for a new message and call handle_message in new thread
   udpserversocket = listenformessage(mycontext['myip'], mycontext['port'])
