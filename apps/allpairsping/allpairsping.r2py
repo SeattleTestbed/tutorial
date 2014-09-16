@@ -156,15 +156,20 @@ if callfunc == 'initialize':
   mycontext['row'] = {}
   # get the nodes to probe
   mycontext['neighborlist'] = []
+  
   try:
     fileobject = openfile('neighboriplist.txt',False)
-    filecontent = fileobject.readat(None,0)
-    neighbor_array = filecontent.splitlines()
-    for line in neighbor_array:
-      mycontext['neighborlist'].append(line.strip())
   except FileNotFoundError, e:
     raise FileNotFoundError("neighboriplist.txt file doesn't exist. Please provide the required file in same directory.")
 
+  filecontent = fileobject.readat(None,0)
+  neighbor_array = filecontent.splitlines()
+  for line in neighbor_array:
+    if line == '':
+      #skip if file contains any blank line
+      continue
+    mycontext['neighborlist'].append(line.strip())
+  
   if len(callargs) != 1:
     raise Exception, "Must specify the port to use"
   pingport = int(callargs[0])
