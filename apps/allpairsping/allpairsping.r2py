@@ -14,7 +14,7 @@ def probe_neighbors_forever():
     for neighborip in mycontext["neighborlist"]:
       mycontext['sendtime'][neighborip] = getruntime()
       if neighborip == mycontext['myip']:
-        #do nothing
+        #skip if ip address in neighboriplist matches the local ip because in repy we cann't have same localip and dest ip
         continue
       sendmessage(neighborip, mycontext['port'], 'ping',mycontext['myip'],mycontext['port'])
       sendmessage(neighborip,mycontext['port'],'share'+encode_row(mycontext['myip'],mycontext["neighborlist"],mycontext['latency'].copy()),mycontext['myip'],mycontext['port'])
@@ -156,7 +156,7 @@ if callfunc == 'initialize':
   mycontext['row'] = {}
   # get the nodes to probe
   mycontext['neighborlist'] = []
-  
+
   try:
     fileobject = openfile('neighboriplist.txt',False)
   except FileNotFoundError, e:
