@@ -87,13 +87,13 @@ def probe_neighbors_forever():
   while True:
     for neighborip in mycontext["neighborlist"]:
       mycontext['sendtime'][neighborip] = getruntime()
-      if neighborip == mycontext['ip']:
-        #skip if local and destination ip addresses and port match because we can't send message if local/dest ip and port match in repy v2
+      if neighborip == mycontext['myip']:
+        #skip if ip address in neighboriplist matches the local ip because in repy we cann't have same localip and dest ip
         continue
-      sendmessage(neighborip, mycontext['port'], 'ping',mycontext['ip'],mycontext['port'])
-      sendmessage(neighborip,mycontext['port'],'share'+encode_row(mycontext["neighborlist"],mycontext['latency'].copy()),mycontext['ip'],mycontext['port'])
+      sendmessage(neighborip, mycontext['port'], 'ping',mycontext['myip'],mycontext['port'])
+      sendmessage(neighborip,mycontext['port'],'share'+encode_row(mycontext['myip'],mycontext["neighborlist"],mycontext['latency'].copy()),mycontext['myip'],mycontext['port'])
       sleep(0.5)
-    #sleep for 10 sec and start from while loop again to avoid so many responses at the same time
+    #sleep for 10 sec and start from while loop again
     sleep(10)
       
 
@@ -134,7 +134,7 @@ def got_message(srcip,srcport,mess):
 
 
 
-def encode_row(neighborlist, latencylist):
+def encode_row(rowip, neighborlist, latencylist):
   '''
   <Purpose>
     Prepares the local node's latency information into a format that is
@@ -155,12 +155,15 @@ def encode_row(neighborlist, latencylist):
     between this node and the other neighbor nodes.
   '''
 
-  retstring = ""
+  
+  retstring = "<tr><td>"+rowip+"</td>"
   for neighborip in neighborlist:
     if neighborip in latencylist:
-      retstring += "<td>"+str(latencylist[neighborip])[:4]+"s</td>"
+      retstring = retstring + "<td>"+str(latencylist[neighborip])[:4]+"s</td>"
     else:
-      retstring += "<td>Unknown</td>"
+      retstring = retstring + "<td>Unknown</td>"
+
+  retstring = retstring + "</tr>"
   return retstring
 
 
@@ -286,14 +289,22 @@ def generate_status_page():
 def handle_http_request(srcip,srcport,connobj):
   # Get the header
   total_data = ''
-  new_data = ''
   # The HTTP header ends once we see the char combination '\n\n', which
   # is an empty string.
-  while '\n\n' not in new_data:
+  while '\n\n' not in total_data:
     # Receive in chunks to avoid reading too much data
-    data = connobj.recv(4096)
-    new_data = data.replace('\r\n', '\n')
-    total_data += new_data
+    try:
+      data = connobj.recv(4096)
+    except SocketWouldBlockError:
+      # retry if they haven't completed sending the header
+      sleep(.05)
+      continue
+    except SocketClosedRemote:
+      log('client from',srcip,'aborted before sending HTTP header...\n')
+      return
+    total_data += data
+    total_data = total_data.replace('\r\n', '\n')
+
   header, overflow = total_data.split('\n\n', 1)
 
   # Get the request path, which is inbetween the HTTP action keyword and the
@@ -343,17 +354,19 @@ def handle_http_request(srcip,srcport,connobj):
 
 
   # send the response
-  try:
-    sent = 0
-    while sent < len(data):
-      sent += connobj.send(data[sent:])
-    # and we're done, so let's close this connection...
-    connobj.close()
-  except Exception, e:
-    if "Socket closed" in str(e):
-      # We can't do anything if the socket is closed
+  sent = 0
+  while sent < len(data):
+    try:
+      sent += connobj.send(data[sent:])  
+    except SocketWouldBlockError:
+      # retry if response hasn't been sent yet
+      sleep(.05)
+      continue
+    except SocketClosedRemote:
+      log('client from',srcip,'aborted before response could be sent...\n')
       return
-    raise
+  # and we're done, so let's close this connection... 
+  connobj.close()
 
 
 
@@ -402,64 +415,71 @@ def handle_message_forever():
   while True:
     try:
       srcip, srcport, mess = udpserversocket.getmessage()
-      got_message(srcip, srcport, mess)
     except SocketWouldBlockError:
       sleep(0.1)
+      continue
+    got_message(srcip, srcport, mess)
     
+      
 
 def handle_connection_forever():
   while True:
     try: 
       ret_ip, ret_port, ret_socket = connobj.getconnection()
-      handle_http_request(ret_ip, ret_port, ret_socket)
     except SocketWouldBlockError:
-      sleep(0.1)  
+      sleep(0.1)
+      continue
+    handle_http_request(ret_ip, ret_port, ret_socket)
     
     
 
 if callfunc == 'initialize':
 
+  #check if user has provided port number as call argument
+  if len(callargs) != 1:
+    raise Exception("Must specify the port to use")
+
+  pingport = int(callargs[0])
+  mycontext['port'] = pingport
+
   # this holds the response information (i.e. when nodes responded)
   mycontext['latency'] = {}
+  mycontext['myip'] = getmyip()
 
   # this remembers when we sent a probe
   mycontext['sendtime'] = {}
 
   # this remembers row data from the other nodes
   mycontext['row'] = {}
-
   # get the nodes to probe
   mycontext['neighborlist'] = []
+
+  mycontext['locationdata'] = {}
   try:
     fileobject = openfile('neighboriplist.txt',False)
-    filecontent = fileobject.readat(None,0)
-    neighbor_array = filecontent.splitlines()
-    for line in neighbor_array:
-      mycontext['neighborlist'].append(line.strip())
   except FileNotFoundError, e:
+    #raise error if file doesn't exists
     raise FileNotFoundError("neighboriplist.txt file doesn't exist. Please provide the required file in same directory.")
 
-  # Contains the dictionaries for node location information.
-  mycontext['locationdata'] = {}
+  filecontent = fileobject.readat(None,0)
+  neighbor_array = filecontent.splitlines()
+  for line in neighbor_array:
+    if line == '':
+      #skip if file contains any blank line
+      continue
+    mycontext['neighborlist'].append(line.strip())
+  
 
-  ip = getmyip()
-  if len(callargs) != 1:
-    raise Exception, "Must specify the port to use"
-  pingport = int(callargs[0])
-  mycontext['port'] = pingport
-  mycontext['ip'] = ip
-  log(mycontext['ip'])
 
-   #listen for a new message and call handle_message in new thread
-  udpserversocket = listenformessage(mycontext['ip'], mycontext['port'])
+  #listen for a new message and call handle_message in new thread
+  udpserversocket = listenformessage(mycontext['myip'], mycontext['port'])
   createthread(handle_message_forever)
   
   createthread(probe_neighbors_forever)
   
   #listen for connection and call handle_http_request once a connection is got
-  connobj = listenforconnection(mycontext['ip'],mycontext['port']) 
+  connobj = listenforconnection(mycontext['myip'],mycontext['port']) 
   createthread(handle_connection_forever)
-  
 
   # Getting geoip data takes a while, in the meanwhile we allow the user to
   # see a status webpage and display a notice there.
